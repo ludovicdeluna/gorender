@@ -1,6 +1,7 @@
 package gorender
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"math/rand"
@@ -41,13 +42,34 @@ func TestScene_NewScene(t *testing.T) {
 
 func TestScene_EachPixel(t *testing.T) {
 	scene := NewScene(4, 4)
+	type Point struct{ x, y int }
+	getPixel := func(maxWidth int) func() (Point, bool, string) {
+		max := maxWidth
+		point := Point{0, 0}
+		var current_point Point
+		var title string
+		return func() (Point, bool, string) {
+			current_point = point
+			title = fmt.Sprintf("%d-%d", point.x, point.y)
+			point.x = point.x + 1
+			if point.x >= max {
+				point.x = 0
+				point.y = point.y + 1
+			}
+			return current_point, current_point.y < max, title
+		}
+	}(scene.Width)
+
 	testCase := randomColor()
 	scene.EachPixel(func(x, y int) color.RGBA {
 		return testCase
 	})
-	// Be aware: At() use index position starting at 0 (and not 1)
-	if got, want := scene.Image.At(3, 3), testCase; got != want {
-		t.Errorf(msg, "Random color for pixel 4:4 is random", got, want)
+	for point, next, title := getPixel(); next == true; point, next, title = getPixel() {
+		t.Run("pixel_"+title, func(t *testing.T) {
+			if got, want := scene.Image.At(point.x, point.y), testCase; got != want {
+				t.Errorf(msg, "Color for this pixel is random", got, want)
+			}
+		})
 	}
 }
 
