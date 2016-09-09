@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -83,8 +84,8 @@ func TestScene_Save(t *testing.T) {
 	var testName string
 	scene := NewScene(4, 4)
 	testCases := map[string]string{
-		"mustFail":    "cant_write_here/test_myfile.png",
-		"mustSucceed": "testdata/test_myfile.png",
+		"mustFail":    filepath.Join("cant_write_here", "test_myfile.png"),
+		"mustSucceed": os.DevNull,
 	}
 	testName = "mustFail"
 	t.Run(testName, func(t *testing.T) {
@@ -102,9 +103,8 @@ func TestScene_Save(t *testing.T) {
 	t.Run(testName, func(t *testing.T) {
 		testCase := testCases[testName]
 		if got, want := scene.Save(testCase), error(nil); got != want {
-			t.Errorf(msg, "Save must be succeed (if folder exists)", got, want)
+			t.Errorf(msg, "Save must be succeed", got, want)
 		}
-		os.Remove(testCase)
 	})
 }
 
