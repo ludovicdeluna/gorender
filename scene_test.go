@@ -42,30 +42,36 @@ func TestScene_NewScene(t *testing.T) {
 
 func TestScene_EachPixel(t *testing.T) {
 	scene := NewScene(4, 4)
-	type Point struct{ x, y int }
-	getPixel := func(maxWidth int) func() (Point, bool, string) {
-		max := maxWidth
-		point := Point{0, 0}
-		var current_point Point
-		var title string
-		return func() (Point, bool, string) {
-			current_point = point
-			title = fmt.Sprintf("%d-%d", point.x, point.y)
-			point.x = point.x + 1
-			if point.x >= max {
-				point.x = 0
-				point.y = point.y + 1
+	type Point struct {
+		x, y  int
+		title string
+	}
+	pixelIterator := func(max int) <-chan Point {
+		done := make(chan Point)
+		go func() {
+			point := Point{0, 0, "0-0"}
+			var current_point Point
+			for point.y < max {
+				point.title = fmt.Sprintf("%d-%d", point.x, point.y)
+				current_point = point
+				point.x = point.x + 1
+				if point.x >= max {
+					point.x = 0
+					point.y = point.y + 1
+				}
+				done <- current_point
 			}
-			return current_point, current_point.y < max, title
-		}
-	}(scene.Width)
+			close(done)
+		}()
+		return done
+	}
 
 	testCase := randomColor()
 	scene.EachPixel(func(x, y int) color.RGBA {
 		return testCase
 	})
-	for point, next, title := getPixel(); next == true; point, next, title = getPixel() {
-		t.Run("pixel_"+title, func(t *testing.T) {
+	for point := range pixelIterator(scene.Width) {
+		t.Run("pixel_"+point.title, func(t *testing.T) {
 			if got, want := scene.Image.At(point.x, point.y), testCase; got != want {
 				t.Errorf(msg, "Color for this pixel is random", got, want)
 			}
