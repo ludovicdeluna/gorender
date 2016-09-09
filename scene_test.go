@@ -27,16 +27,16 @@ func TestScene_NewScene(t *testing.T) {
 		}
 		for _, testSize := range testCases {
 			t.Run(testSize.title, func(t *testing.T) {
-				if testSize.got != testSize.want {
-					t.Errorf(msg, "New scene get correct sizes", testSize.got, testSize.want)
+				if e := expect(testSize.got, testSize.want); e.Equals() {
+					t.Error(e.Is("New scene get correct sizes"))
 				}
 			})
 		}
 	}
 	t.Run("Points", func(t *testing.T) {
 		rect := image.Rect(0, 0, size.width, size.height)
-		if got, want := scene.Image.Bounds(), rect; got != want {
-			t.Errorf(msg, "scene.Image as correct rectangle points", got, want)
+		if e := expect(scene.Image.Bounds(), rect); e.Equals() {
+			t.Error(e.Is("scene.Image as correct rectangle points"))
 		}
 	})
 }
@@ -73,8 +73,8 @@ func TestScene_EachPixel(t *testing.T) {
 	})
 	for point := range pixelIterator(scene.Width) {
 		t.Run("pixel_"+point.title, func(t *testing.T) {
-			if got, want := scene.Image.At(point.x, point.y), testCase; got != want {
-				t.Errorf(msg, "Color for this pixel is random", got, want)
+			if e := expect(scene.Image.At(point.x, point.y), testCase); e.Equals() {
+				t.Error(e.Is("Color for this pixel is random"))
 			}
 		})
 	}
@@ -90,20 +90,15 @@ func TestScene_Save(t *testing.T) {
 	testName = "mustFail"
 	t.Run(testName, func(t *testing.T) {
 		testCase := testCases[testName]
-		want := "Can't save file " + testCase
-		got := scene.Save(testCase)
-		switch {
-		case got == nil:
-			t.Error("Didn't failed")
-		case got.Error() != want:
-			t.Errorf(msg, "Save on no-writable location will fail", got, want)
+		if e := expect(scene.Save(testCase), "Can't save file " + testCase); e.HasError() {
+			t.Error(e.Is("Save on no-writable location will fail"))
 		}
 	})
 	testName = "mustSucceed"
 	t.Run(testName, func(t *testing.T) {
 		testCase := testCases[testName]
-		if got, want := scene.Save(testCase), error(nil); got != want {
-			t.Errorf(msg, "Save must be succeed", got, want)
+		if e := expect(scene.Save(testCase), error(nil)); e.Equals() {
+			t.Error(e.Is("Save must be succeed"))
 		}
 	})
 }
@@ -115,4 +110,39 @@ func randomColor() color.RGBA {
 	rgb := make([]byte, 3) // Byte are uint8, 8 bits unsigned values -> 0-255
 	randomizer.Read(rgb)   // Assigne random 8 bits values into slide (len 3)
 	return color.RGBA{rgb[0], rgb[1], rgb[2], byte(255)}
+}
+
+
+// Expects helper (to avoid repetition -> if got, want := , ; got != want)
+type Expects struct {
+	got		interface{}
+	want	interface{}
+	title string
+}
+
+func expect(got, want interface{}) *Expects {
+	expects := Expects{got: got, want: want}
+	return &expects
+}
+
+func(e *Expects) String() string {
+	return fmt.Sprintf(msg, e.title, e.got, e.want)
+}
+
+func(e *Expects) Is(m string) string {
+	e.title = m
+	return e.String()
+}
+
+func(e *Expects) Equals() bool {
+	return e.got != e.want
+}
+
+func(e *Expects) HasError() bool {
+	switch t := e.got.(type) {
+	case error:
+		return t != nil && t.Error() != e.want
+	default:
+		return false
+	}
 }
