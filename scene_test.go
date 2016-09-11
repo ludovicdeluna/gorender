@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-)
 
-var msg string = "%s :\nGot:  %v\nWant: %v"
+	"github.com/ludovicdeluna/gorender/helpers/expect"
+)
 
 func TestScene_NewScene(t *testing.T) {
 	size := struct{ width, height int }{4, 4}
@@ -27,16 +27,16 @@ func TestScene_NewScene(t *testing.T) {
 		}
 		for _, testSize := range testCases {
 			t.Run(testSize.title, func(t *testing.T) {
-				if e := expect(testSize.got); e.Equals(testSize.want) {
-					t.Error(e.It("New scene get correct sizes"))
+				if e := expect.For(testSize.got).Equals(testSize.want) ; e.Fail() {
+					t.Error(e.It("Initialize new scene with correct height x width"))
 				}
 			})
 		}
 	}
 	t.Run("Points", func(t *testing.T) {
 		rect := image.Rect(0, 0, size.width, size.height)
-		if e := expect(scene.Image.Bounds()); e.Equals(rect) {
-			t.Error(e.It("scene.Image as correct rectangle points"))
+		if e := expect.For(scene.Image.Bounds()).Equals(rect) ; e.Fail() {
+			t.Error(e.It("Have Image object using correct height x width"))
 		}
 	})
 }
@@ -71,8 +71,8 @@ func TestScene_EachPixel(t *testing.T) {
 	})
 	for point := range pixelIterator(scene.Width) {
 		t.Run("pixel_"+point.title, func(t *testing.T) {
-			if e := expect(scene.Image.At(point.x, point.y)); e.Equals(testCase) {
-				t.Error(e.It("Color for this pixel is random"))
+			if e := expect.For(scene.Image.At(point.x, point.y)).Equals(testCase) ; e.Fail() {
+				t.Error(e.It("Colorize all pixels with color function"))
 			}
 		})
 	}
@@ -88,15 +88,15 @@ func TestScene_Save(t *testing.T) {
 	testName = "mustFail"
 	t.Run(testName, func(t *testing.T) {
 		testCase := testCases[testName]
-		if e := expect(scene.Save(testCase)); e.HasError("Can't save file " + testCase) {
-			t.Error(e.It("Save on no-writable location will fail"))
+		if e := expect.For(scene.Save(testCase)).HasError("Can't save file " + testCase) ; e.Fail() {
+			t.Error(e.It("Return error when file can't be saved"))
 		}
 	})
 	testName = "mustSucceed"
 	t.Run(testName, func(t *testing.T) {
 		testCase := testCases[testName]
-		if e := expect(scene.Save(testCase)); e.Equals(error(nil)) {
-			t.Error(e.It("Save must be succeed"))
+		if e := expect.For(scene.Save(testCase)).Equals(error(nil)) ; e.Fail() {
+			t.Error(e.It("Save the file"))
 		}
 	})
 }
@@ -108,40 +108,4 @@ func randomColor() color.RGBA {
 	rgb := make([]byte, 3) // Byte are uint8, 8 bits unsigned values -> 0-255
 	randomizer.Read(rgb)   // Assigne random 8 bits values into slide (len 3)
 	return color.RGBA{rgb[0], rgb[1], rgb[2], byte(255)}
-}
-
-// Expects helper (to avoid repetition -> if got, want := , ; got != want)
-type Expects struct {
-	got   interface{}
-	want  interface{}
-	title string
-}
-
-func expect(got interface{}) *Expects {
-	expects := Expects{got: got}
-	return &expects
-}
-
-func (e *Expects) String() string {
-	return fmt.Sprintf(msg, e.title, e.got, e.want)
-}
-
-func (e *Expects) It(m string) string {
-	e.title = m
-	return e.String()
-}
-
-func (e *Expects) Equals(want interface{}) bool {
-	e.want = want
-	return e.got != e.want
-}
-
-func (e *Expects) HasError(want interface{}) bool {
-	e.want = want
-	switch t := e.got.(type) {
-	case error:
-		return t.Error() != e.want
-	default:
-		return true
-	}
 }
