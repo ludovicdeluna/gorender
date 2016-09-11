@@ -27,7 +27,7 @@ func TestScene_NewScene(t *testing.T) {
 		}
 		for _, testSize := range testCases {
 			t.Run(testSize.title, func(t *testing.T) {
-				if e := expect.For(testSize.got).Equals(testSize.want) ; e.Fail() {
+				if e := expect.For(testSize.got).Equals(testSize.want); e.Fail {
 					t.Error(e.It("Initialize new scene with correct height x width"))
 				}
 			})
@@ -35,7 +35,7 @@ func TestScene_NewScene(t *testing.T) {
 	}
 	t.Run("Points", func(t *testing.T) {
 		rect := image.Rect(0, 0, size.width, size.height)
-		if e := expect.For(scene.Image.Bounds()).Equals(rect) ; e.Fail() {
+		if e := expect.For(scene.Image.Bounds()).Equals(rect); e.Fail {
 			t.Error(e.It("Have Image object using correct height x width"))
 		}
 	})
@@ -69,9 +69,10 @@ func TestScene_EachPixel(t *testing.T) {
 	scene.EachPixel(func(x, y int) color.RGBA {
 		return testCase
 	})
+	e := expect.New()
 	for point := range pixelIterator(scene.Width) {
 		t.Run("pixel_"+point.title, func(t *testing.T) {
-			if e := expect.For(scene.Image.At(point.x, point.y)).Equals(testCase) ; e.Fail() {
+			if e.For(scene.Image.At(point.x, point.y)).Equals(testCase).Fail {
 				t.Error(e.It("Colorize all pixels with color function"))
 			}
 		})
@@ -85,17 +86,18 @@ func TestScene_Save(t *testing.T) {
 		"mustFail":    filepath.Join("cant_write_here", "test_myfile.png"),
 		"mustSucceed": os.DevNull,
 	}
+	e := expect.New()
 	testName = "mustFail"
 	t.Run(testName, func(t *testing.T) {
 		testCase := testCases[testName]
-		if e := expect.For(scene.Save(testCase)).HasError("Can't save file " + testCase) ; e.Fail() {
+		if e.For(scene.Save(testCase)).HasError("Can't save file " + testCase).Fail {
 			t.Error(e.It("Return error when file can't be saved"))
 		}
 	})
 	testName = "mustSucceed"
 	t.Run(testName, func(t *testing.T) {
 		testCase := testCases[testName]
-		if e := expect.For(scene.Save(testCase)).Equals(error(nil)) ; e.Fail() {
+		if e.For(scene.Save(testCase)).HasNoError().Fail {
 			t.Error(e.It("Save the file"))
 		}
 	})
