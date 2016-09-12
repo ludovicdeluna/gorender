@@ -16,6 +16,7 @@ import (
 func TestScene_NewScene(t *testing.T) {
 	size := struct{ width, height int }{4, 4}
 	scene := NewScene(size.width, size.height)
+	// Check attributes
 	{
 		testCases := []struct {
 			title string
@@ -33,16 +34,18 @@ func TestScene_NewScene(t *testing.T) {
 			})
 		}
 	}
-	t.Run("Points", func(t *testing.T) {
+	// Check image size
+	{
 		rect := image.Rect(0, 0, size.width, size.height)
-		if e := expect.For(scene.Image.Bounds()).Equals(rect); e.Fail {
-			t.Error(e.It("Have Image object using correct height x width"))
-		}
-	})
+		t.Run("Points", func(t *testing.T) {
+			if e := expect.For(scene.Image.Bounds()).Equals(rect); e.Fail {
+				t.Error(e.It("Have Image object size (%dx%d)", size.width, size.height))
+			}
+		})
+	}
 }
 
 func TestScene_EachPixel(t *testing.T) {
-	scene := NewScene(4, 4)
 	type Point struct {
 		x, y  int
 		title string
@@ -52,7 +55,7 @@ func TestScene_EachPixel(t *testing.T) {
 		go func() {
 			point := Point{0, 0, "0-0"}
 			for point.y < max {
-				point.title = fmt.Sprintf("%d-%d", point.x, point.y)
+				point.title = fmt.Sprintf("pixel_%d-%d", point.x, point.y)
 				done <- point
 				point.x = point.x + 1
 				if point.x >= max {
@@ -66,12 +69,13 @@ func TestScene_EachPixel(t *testing.T) {
 	}
 
 	testCase := randomColor()
+	scene := NewScene(4, 4)
 	scene.EachPixel(func(x, y int) color.RGBA {
 		return testCase
 	})
-	e := expect.New().Title("Colorize all pixels with color function")
+	e := expect.It("Colorize all pixels with color function")
 	for point := range pixelIterator(scene.Width) {
-		t.Run("pixel_"+point.title, func(t *testing.T) {
+		t.Run(point.title, func(t *testing.T) {
 			if e.For(scene.Image.At(point.x, point.y)).Equals(testCase).Fail {
 				t.Error(e.String())
 			}
