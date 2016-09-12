@@ -69,11 +69,11 @@ func TestScene_EachPixel(t *testing.T) {
 	scene.EachPixel(func(x, y int) color.RGBA {
 		return testCase
 	})
-	e := expect.New()
+	e := expect.New().Title("Colorize all pixels with color function")
 	for point := range pixelIterator(scene.Width) {
 		t.Run("pixel_"+point.title, func(t *testing.T) {
 			if e.For(scene.Image.At(point.x, point.y)).Equals(testCase).Fail {
-				t.Error(e.It("Colorize all pixels with color function"))
+				t.Error(e.String())
 			}
 		})
 	}

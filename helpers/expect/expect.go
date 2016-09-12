@@ -5,7 +5,7 @@ import "fmt"
 var msg string = "%s :\nGot:  %v\nWant: %v"
 
 type Expects struct {
-	got   interface{}
+	Got   interface{}
 	want  interface{}
 	title string
 	Fail  bool
@@ -16,16 +16,16 @@ func New() *Expects {
 }
 
 func For(got interface{}) *Expects {
-	return &Expects{got: got}
+	return &Expects{Got: got}
 }
 
 func (e *Expects) For(got interface{}) *Expects {
-	e.got = got
+	e.Got = got
 	return e
 }
 
 func (e *Expects) String() string {
-	return fmt.Sprintf(msg, e.title, e.got, e.want)
+	return fmt.Sprintf(msg, e.title, e.Got, e.want)
 }
 
 func (e *Expects) It(m string) string {
@@ -33,15 +33,20 @@ func (e *Expects) It(m string) string {
 	return e.String()
 }
 
+func (e *Expects) Title(m string) *Expects {
+	e.title = m
+	return e
+}
+
 func (e *Expects) Equals(want interface{}) *Expects {
 	e.want = want
-	e.Fail = e.got != e.want
+	e.Fail = e.Got != e.want
 	return e
 }
 
 func (e *Expects) HasError(want interface{}) *Expects {
 	e.want = want
-	switch t := e.got.(type) {
+	switch t := e.Got.(type) {
 	case error:
 		e.Fail = t.Error() != e.want
 	default:
